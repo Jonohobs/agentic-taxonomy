@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Taxonomy — Glacial</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0f; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
+  canvas { display: block; }
+  #info {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.4); font-size: 13px; pointer-events: none;
+    text-align: center;
+  }
+  #tooltip {
+    position: fixed; display: none; padding: 14px 18px;
+    top: 20px; right: 20px;
+    background: rgba(10,10,20,0.92); border: 1px solid rgba(100,140,255,0.3);
+    border-radius: 8px; color: #e0e0e0; font-size: 13px; max-width: 320px;
+    pointer-events: none; backdrop-filter: blur(10px); z-index: 100;
+  }
+  #tooltip h3 { color: #7eb4ff; margin-bottom: 4px; font-size: 14px; }
+  #tooltip .layer { color: #888; font-size: 11px; margin-bottom: 6px; }
+  #tooltip p { line-height: 1.4; opacity: 0.85; }
+  #legend {
+    position: fixed; top: 20px; left: 20px; color: rgba(255,255,255,0.5);
+    font-size: 12px; pointer-events: none; line-height: 1.8;
+  }
+  #legend span { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+    margin-right: 6px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div id="tooltip"><h3></h3><div class="layer"></div><p></p></div>
+<div id="info">drag to orbit · hover for details · scroll to zoom · shift+drag to strafe</div>
+<div id="legend">
+  <div><span style="background:#ff9966"></span>Human Layer</div>
+  <div><span style="background:#7eb4ff"></span>Agent Layer</div>
+  <div><span style="background:#44ddaa"></span>Knowledge Layer</div>
+  <div><span style="background:#ffaa44"></span>Execution Layer</div>
+  <div><span style="background:#dd55ff"></span>Protocol Layer</div>
+  <div><span style="background:#00ffaa"></span>Security Layer</div>
+  <div><span style="background:#ff2244"></span>Threat Layer</div>
+  <div><span style="background:#ff5555"></span>World Layer</div>
+  <div><span style="background:#ff8800"></span>Hardware Layer</div>
+  <div><span style="background:#ff66aa"></span>Application Layer</div>
+  <div><span style="background:#22ccdd"></span>Infrastructure Layer</div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ── Scene ──────────────────────────────────────────────────────────────
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x0a0a0f, 0.005);
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 500);
+camera.position.set(5, 12, 28);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.25;
+controls.maxPolarAngle = Math.PI * 0.8;
+controls.target.set(0, 2, 0);
+
+// ── Lighting ───────────────────────────────────────────────────────────
+scene.add(new THREE.AmbientLight(0x334466, 0.6));
+const keyLight = new THREE.DirectionalLight(0x7eb4ff, 1.0);
+keyLight.position.set(8, 15, 8);
+scene.add(keyLight);
+const rimLight = new THREE.PointLight(0xff6644, 0.7, 40);
+rimLight.position.set(-10, 8, -8);
+scene.add(rimLight);
+const fillLight = new THREE.PointLight(0x44ffaa, 0.4, 30);
+fillLight.position.set(8, -5, 10);
+scene.add(fillLight);
+const bottomLight = new THREE.PointLight(0x6644ff, 0.3, 25);
+bottomLight.position.set(0, -10, 0);
+scene.add(bottomLight);
+
+// ── Node definitions ───────────────────────────────────────────────────
+// Layout: Y = layer height, spread on X/Z within layers
+const nodes = [
+  // ── Human Layer (top) ──
+  {
+    id: 'user', label: 'USER', color: 0xff9966, layer: 'Human',
+    pos: [0, 14, 0], size: 1.2, shape: 'dodeca',
+    desc: 'You. The human in the loop. Everything flows from your intent.',
+    example: 'Jonathan, CJ, any human operator'
+  },
+
+  // ── Agent Layer ──
+  {
+    id: 'orchestrator', label: 'ORCHESTRATOR', color: 0x99aaff, layer: 'Agent',
+    pos: [-5, 10, 2], size: 0.85, shape: 'octa',
+    desc: 'Manages multiple agents. Delegates, coordinates, merges results.',
+    example: 'Multi-agent workflows, parallel research fans'
+  },
+  {
+    id: 'agent', label: 'AGENT', color: 0x7eb4ff, layer: 'Agent',
+    pos: [0, 10, 0], size: 1.4, shape: 'ico',
+    desc: 'The brain. Receives knowledge, plans work, takes action through tools.',
+    example: 'Claude Code, OpenClaw, Codex CLI'
+  },
+  {
+    id: 'other_agents', label: 'OTHER AGENTS', color: 0x6699dd, layer: 'Agent',
+    pos: [5, 10, 2], size: 0.85, shape: 'ico',
+    desc: 'Agent-to-Agent (A2A). Other agents this one can talk to.',
+    example: "CJ's agent pulling from glacial, swarm workers"
+  },
+  {
+    id: 'model', label: 'MODEL / LLM', color: 0x88ccff, layer: 'Agent',
+    pos: [0, 10, -3], size: 0.75, shape: 'sphere',
+    desc: 'The actual neural network powering the agent. Different models for different jobs.',
+    example: 'Opus (complex), Sonnet (code), Haiku (fast lookups)'
+  },
+
+  // ── Knowledge Layer ──
+  {
+    id: 'skill', label: 'SKILL', color: 0x44ddaa, layer: 'Knowledge',
+    pos: [-6, 6, -1], size: 0.9, shape: 'ico',
+    desc: 'Knowledge injection. Makes the agent smarter about a topic. Living docs the agent reads AND writes.',
+    example: '/threejs, /r3f, /ui-ux-pro-max'
+  },
+  {
+    id: 'claude_md', label: 'CLAUDE.md', color: 0x33cc88, layer: 'Knowledge',
+    pos: [-3, 6, 3], size: 0.8, shape: 'box',
+    desc: 'Standing orders. Project-level and global instructions that shape agent behavior every session.',
+    example: 'Trust boundaries, action rules, project paths, shortcuts'
+  },
+  {
+    id: 'memory', label: 'MEMORY', color: 0x55eebb, layer: 'Knowledge',
+    pos: [3, 6, 3], size: 0.9, shape: 'ico',
+    desc: 'Persistent knowledge across sessions. User prefs, feedback, project context, references.',
+    example: 'MEMORY.md, memory/*.md, session notes'
+  },
+  {
+    id: 'plans', label: 'PLANS / TASKS', color: 0x66ddcc, layer: 'Knowledge',
+    pos: [6, 6, -1], size: 0.75, shape: 'octa',
+    desc: 'Structured work tracking. Break big jobs into steps, track progress.',
+    example: 'Implementation plans, task lists, milestones'
+  },
+
+  // ── Execution Layer ──
+  {
+    id: 'context', label: 'CONTEXT WINDOW', color: 0xffdd44, layer: 'Agent',
+    pos: [0, 10, 0], size: 1.0, shape: 'ring',
+    desc: 'The sharp zone. Everything the agent can see right now. Too much = blurry. Too little = blind. Wraps around the agent.',
+    example: '1M tokens for Opus, managed via /compact'
+  },
+  {
+    id: 'hooks', label: 'HOOKS', color: 0xffbb33, layer: 'Execution',
+    pos: [-4, 2, 0], size: 0.65, shape: 'octa',
+    desc: 'Auto-triggers that fire before or after tool calls. Guardrails and automation.',
+    example: 'Pre-commit checks, post-edit linting, security scans'
+  },
+  {
+    id: 'tool', label: 'TOOL', color: 0xffaa44, layer: 'Execution',
+    pos: [0, 1, 0], size: 1.0, shape: 'ico',
+    desc: 'A single action the agent can take. The atomic unit of doing things.',
+    example: 'grab_screenshot, Read, Edit, Bash, memory_search'
+  },
+
+  // ── Protocol Layer ──
+  {
+    id: 'mcp', label: 'MCP', color: 0xdd55ff, layer: 'Protocol',
+    pos: [0, -3, 0], size: 1.1, shape: 'ico',
+    desc: 'Model Context Protocol. The translator between agent tools and the outside world.',
+    example: 'Desktop Bridge, Spline MCP, Figma MCP'
+  },
+  {
+    id: 'resources', label: 'RESOURCES', color: 0xcc66ee, layer: 'Protocol',
+    pos: [-5, -4, 1], size: 0.6, shape: 'sphere',
+    desc: 'Read-only data exposed by MCP servers. The agent can look but not touch.',
+    example: 'File contents, database records, config values'
+  },
+  {
+    id: 'prompts', label: 'PROMPTS', color: 0xbb77dd, layer: 'Protocol',
+    pos: [5, -4, 1], size: 0.6, shape: 'sphere',
+    desc: 'Reusable templates exposed by MCP servers. Pre-built patterns for common tasks.',
+    example: 'Code review template, commit message format'
+  },
+
+  // ── Security Layer ──
+  {
+    id: 'trust_boundary', label: 'TRUST BOUNDARY', color: 0x00ffaa, layer: 'Security',
+    pos: [-5, -1, 1], size: 0.85, shape: 'octa',
+    desc: 'The line between trusted and untrusted. Data crossing this boundary gets scrutinized.',
+    example: 'File content vs user instructions, external API responses'
+  },
+  {
+    id: 'sandboxing', label: 'SANDBOXING', color: 0x00dd88, layer: 'Security',
+    pos: [-1.5, -1, -2], size: 0.75, shape: 'box',
+    desc: 'Isolated execution environments. Tools run in cages so they can\'t break the house.',
+    example: 'Bash sandbox, container isolation, permission boundaries'
+  },
+  {
+    id: 'auth_perms', label: 'AUTH / PERMISSIONS', color: 0x33ffcc, layer: 'Security',
+    pos: [2, -1, -1], size: 0.8, shape: 'ico',
+    desc: 'Access control. Who can do what, and how much damage can they do?',
+    example: 'API keys, OAuth scopes, tool allowlists, permission modes'
+  },
+  {
+    id: 'prompt_injection', label: 'PROMPT INJECTION', color: 0x00cc77, layer: 'Security',
+    pos: [5.5, -1, 1], size: 0.7, shape: 'dodeca',
+    desc: 'Defense against manipulation. Untrusted content trying to hijack the agent\'s behavior.',
+    example: 'Injected instructions in files, web content, tool results'
+  },
+  {
+    id: 'cloud_iam', label: 'CLOUD IAM', color: 0x22eebb, layer: 'Security',
+    pos: [-3, -1.5, -3], size: 0.7, shape: 'ico',
+    desc: 'Cloud identity and access management. Service accounts, roles, policies governing who talks to what.',
+    example: 'GCP IAM, AWS IAM, Azure AD, service account keys'
+  },
+  {
+    id: 'k8s', label: 'K8s / GKE', color: 0x00bb99, layer: 'Security',
+    pos: [4, -1.5, -3], size: 0.75, shape: 'box',
+    desc: 'Kubernetes clusters. Container orchestration with RBAC, network policies, pod security.',
+    example: 'GKE clusters, EKS, AKS, pod security policies, namespaces'
+  },
+  {
+    id: 'compliance', label: 'COMPLIANCE', color: 0x44ffdd, layer: 'Security',
+    pos: [0, -2, 3], size: 0.7, shape: 'dodeca',
+    desc: 'Regulatory and policy compliance. The rules you must follow, audited and enforced.',
+    example: 'GDPR, SOC 2, HIPAA, data residency, audit logs'
+  },
+
+  // ── Threat Layer ──
+  {
+    id: 'adversarial_input', label: 'ADVERSARIAL INPUT', color: 0xff2244, layer: 'Threat',
+    pos: [-6, -5, 2], size: 0.7, shape: 'dodeca',
+    desc: 'Malicious data designed to fool models. Jailbreaks, prompt injections, data poisoning.',
+    example: 'Ignore previous instructions, hidden Unicode, steganographic payloads'
+  },
+  {
+    id: 'exfiltration', label: 'EXFILTRATION', color: 0xdd1133, layer: 'Threat',
+    pos: [-2, -5, -2], size: 0.65, shape: 'octa',
+    desc: 'Unauthorized data leakage. Agent tricked into sending secrets to external endpoints.',
+    example: 'Credential leak via tool calls, PII in API requests, memory exfil'
+  },
+  {
+    id: 'privilege_escalation', label: 'PRIV ESCALATION', color: 0xff3355, layer: 'Threat',
+    pos: [2, -5, -2], size: 0.7, shape: 'ico',
+    desc: 'Gaining more access than authorized. Breaking out of sandbox, escalating permissions.',
+    example: 'Container escape, sudo exploit, token theft, role assumption'
+  },
+  {
+    id: 'supply_chain', label: 'SUPPLY CHAIN', color: 0xcc0022, layer: 'Threat',
+    pos: [6, -5, 2], size: 0.65, shape: 'box',
+    desc: 'Compromise through dependencies. Poisoned packages, malicious MCP servers, backdoored models.',
+    example: 'npm typosquatting, compromised pip packages, trojan plugins'
+  },
+  {
+    id: 'ddos', label: 'DoS / ABUSE', color: 0xee2255, layer: 'Threat',
+    pos: [0, -5.5, 3], size: 0.6, shape: 'octa',
+    desc: 'Resource exhaustion and misuse. Flooding APIs, burning tokens, infinite loops.',
+    example: 'API rate limit abuse, token burn attacks, recursive agent loops'
+  },
+
+  {
+    id: 'unified_mem', label: 'UNIFIED MEMORY', color: 0xffcc44, layer: 'Hardware',
+    pos: [-4, -13, 2], size: 0.65, shape: 'sphere',
+    desc: 'Shared memory pool for CPU and GPU. No copying between them — both read the same bytes. Faster, simpler, power-efficient.',
+    example: 'Apple M1–M4 Ultra, AMD APUs with shared HBM'
+  },
+  {
+    id: 'quantum', label: 'QUANTUM', color: 0xbb44ff, layer: 'Hardware',
+    pos: [5, 18, 1], size: 0.6, shape: 'dodeca',
+    desc: 'Early-stage computing paradigm using qubits instead of bits. Promising for cryptography, molecular simulation, and optimization. Current hardware is nascent — useful for research, not yet for production AI workloads.',
+    example: 'IBM Quantum (free, noisy), Amazon Braket (pay-per-shot), Google Willow (research only)'
+  },
+  {
+    id: 'github', label: 'GITHUB', color: 0xffffff, layer: 'Hardware',
+    pos: [0, 17, 3], size: 0.7, shape: 'ico',
+    desc: 'Git hosting, CI/CD, issue tracking, code review. Where code lives and changes flow through.',
+    example: 'Repos, Actions workflows, gh CLI, webhooks'
+  },
+
+  // ── World Layer (bottom) ──
+  {
+    id: 'api', label: 'API', color: 0xff5555, layer: 'World',
+    pos: [-5, -8, 0], size: 0.85, shape: 'ico',
+    desc: 'Remote services that accept requests and return data. The menu of what you can ask for.',
+    example: 'Figma API, Slack API, GitHub API, OpenAI API'
+  },
+  {
+    id: 'system', label: 'SYSTEM', color: 0xff8844, layer: 'World',
+    pos: [0, -8, -2], size: 0.85, shape: 'ico',
+    desc: 'Local OS capabilities. File system, clipboard, processes — the real world.',
+    example: 'Windows clipboard, file system, PowerShell, git'
+  },
+  {
+    id: 'web', label: 'WEB', color: 0xff6655, layer: 'World',
+    pos: [5, -8, 0], size: 0.75, shape: 'sphere',
+    desc: 'The internet. Search, fetch, scrape. Information at large.',
+    example: 'WebSearch, WebFetch, npm registry'
+  },
+  // ── Application Layer ──
+  {
+    id: 'voice_ai', label: 'VOICE AI', color: 0xff66aa, layer: 'Application',
+    pos: [-9, -7, 0], size: 0.75, shape: 'ico',
+    desc: 'Speech recognition and synthesis. Turns voice into text and text into speech. Enables conversational AI interfaces.',
+    example: 'Whisper (STT), ElevenLabs (TTS), Groq Whisper, WebRTC audio'
+  },
+  {
+    id: 'pipeline', label: 'PIPELINE', color: 0xee5599, layer: 'Application',
+    pos: [-5, -7, -2], size: 0.8, shape: 'octa',
+    desc: 'Sequential processing chains. Data flows through ordered stages — each transforms, filters, or enriches. The assembly line of software.',
+    example: 'DTR reconstruction pipeline, CI/CD, ETL, video-to-3D'
+  },
+  {
+    id: 'state_machine', label: 'STATE MACHINE', color: 0xff77bb, layer: 'Application',
+    pos: [-1, -7, 1], size: 0.7, shape: 'dodeca',
+    desc: 'Finite set of states with defined transitions. Only one state active at a time. Prevents impossible combinations.',
+    example: 'Game states (lobby→play→results), voice (idle→listening→speaking), job lifecycle'
+  },
+  {
+    id: 'event_bus', label: 'EVENT BUS', color: 0xdd4488, layer: 'Application',
+    pos: [3, -7, -2], size: 0.7, shape: 'ico',
+    desc: 'Decoupled pub/sub messaging. Components broadcast events without knowing who listens. The nervous system of modular apps.',
+    example: 'Godot signals, Node EventEmitter, WebSocket channels, DOM events'
+  },
+  {
+    id: 'ecs', label: 'ECS', color: 0xcc3377, layer: 'Application',
+    pos: [7, -7, 0], size: 0.75, shape: 'box',
+    desc: 'Entity-Component-System. Entities are IDs, components are data bags, systems are logic. Composition over inheritance. The architecture of games and simulations.',
+    example: 'Glacial game systems, Unity DOTS, Bevy ECS, Open Sause LARP engine'
+  },
+  {
+    id: 'code_gen', label: 'CODE GEN', color: 0xff88cc, layer: 'Application',
+    pos: [-5, -7, 3], size: 0.65, shape: 'sphere',
+    desc: 'Programmatic creation of source code. Templates, ASTs, or AI generate code for specific frameworks and targets.',
+    example: 'Spline MCP (React/Next.js/Vanilla), scaffolding tools, copilot suggestions'
+  },
+  {
+    id: 'reconstruction_3d', label: '3D RECONSTRUCTION', color: 0xee6699, layer: 'Application',
+    pos: [5, -7, 3], size: 0.8, shape: 'ico',
+    desc: 'Turning 2D images or video into 3D geometry. Photogrammetry uses many photos; AI hallucinates from few. Fusion combines both.',
+    example: 'COLMAP, Trellis, Hunyuan3D, Gaussian Splatting, NeRF'
+  },
+  {
+    id: 'shader', label: 'SHADER', color: 0xdd5588, layer: 'Application',
+    pos: [9, -7, -1], size: 0.7, shape: 'dodeca',
+    desc: 'Programs that run on the GPU per-pixel or per-vertex. Control how things look — color, lighting, distortion, effects. The paint of 3D.',
+    example: 'GLSL, WGSL, TSL (Three.js Shading Language), vertex/fragment shaders'
+  },
+
+  // ── Infrastructure Layer ──
+  {
+    id: 'serverless', label: 'SERVERLESS', color: 0x22ccdd, layer: 'Infrastructure',
+    pos: [-8, -10, 2], size: 0.8, shape: 'ico',
+    desc: 'Functions that run on-demand. No server management, pay per execution. The servers exist — you just don\'t think about them.',
+    example: 'Vercel Functions, AWS Lambda, Supabase Edge Functions, Cloud Run'
+  },
+  {
+    id: 'edge', label: 'EDGE', color: 0x33ddee, layer: 'Infrastructure',
+    pos: [-4, -10, -1], size: 0.75, shape: 'dodeca',
+    desc: 'Compute distributed globally, close to users. Your code runs in the nearest data center — London, Tokyo, Sao Paulo.',
+    example: 'Cloudflare Workers, Vercel Edge, Deno Deploy, Supabase Edge Functions'
+  },
+  {
+    id: 'database', label: 'DATABASE', color: 0x11bbcc, layer: 'Infrastructure',
+    pos: [0, -10, 2], size: 0.9, shape: 'box',
+    desc: 'Persistent structured data. SQL, NoSQL, vector — where state lives. The code gets cloned everywhere, but data usually lives in one region.',
+    example: 'Supabase (Postgres), Firebase, PlanetScale, MongoDB Atlas, pgvector'
+  },
+  {
+    id: 'cdn', label: 'CDN', color: 0x44eeff, layer: 'Infrastructure',
+    pos: [4, -10, -1], size: 0.65, shape: 'sphere',
+    desc: 'Cached static content at the edge. Images, JS, HTML served from the nearest node. Fast because it\'s pre-copied, not computed.',
+    example: 'Cloudflare, Vercel Edge Network, CloudFront, Fastly'
+  },
+  {
+    id: 'realtime', label: 'REALTIME', color: 0x00aabb, layer: 'Infrastructure',
+    pos: [8, -10, 2], size: 0.75, shape: 'octa',
+    desc: 'Persistent connections (WebSockets). Live updates, multiplayer state, presence. The server pushes to you instead of you polling it.',
+    example: 'Supabase Realtime, Socket.io, Pusher, Ably, Firebase Realtime DB'
+  },
+  {
+    id: 'auth_infra', label: 'AUTH', color: 0x22ddcc, layer: 'Infrastructure',
+    pos: [0, -10, -3], size: 0.7, shape: 'ico',
+    desc: 'Identity and access at the infrastructure level. Who are you, and what can you touch? Handles login, sessions, tokens, OAuth.',
+    example: 'Supabase Auth, Auth0, Clerk, NextAuth.js, Firebase Auth'
+  },
+
+  // ── Hardware Layer (bottom) ──
+  {
+    id: 'cpu', label: 'CPU / RAM', color: 0xff8800, layer: 'Hardware',
+    pos: [-6, -12, 0], size: 0.8, shape: 'box',
+    desc: 'Processing and system memory. CPU runs the logic, RAM holds the state. Context windows, model weights, processes — all live in RAM.',
+    example: 'Intel i9 + 64GB DDR5, AMD Ryzen, Apple M-series unified memory'
+  },
+  {
+    id: 'gpu', label: 'GPU / VRAM', color: 0xffaa22, layer: 'Hardware',
+    pos: [-2, -12, -1], size: 0.9, shape: 'ico',
+    desc: 'Parallel compute and memory. Where models actually run. VRAM = how big a model fits.',
+    example: 'RTX 4090 (24GB), A100 (80GB), H100, Apple M-series unified'
+  },
+  {
+    id: 'cloud_compute', label: 'CLOUD COMPUTE', color: 0xee7700, layer: 'Hardware',
+    pos: [8, 17, -2], size: 0.85, shape: 'ico',
+    desc: 'Remote hardware you rent. Scales up, scales down, bills by the second.',
+    example: 'GCP TPUs, AWS GPU instances, Azure VMs, Lambda, Cloud Run'
+  },
+  {
+    id: 'local_hw', label: 'LOCAL MACHINE', color: 0xdd6600, layer: 'Hardware',
+    pos: [6, -12, 0], size: 0.75, shape: 'box',
+    desc: 'Your physical machine. RAM, disk, network. The thing under your desk or in your lap.',
+    example: 'Dev laptop, workstation, Raspberry Pi, edge devices'
+  },
+  {
+    id: 'storage', label: 'CLOUD STORAGE', color: 0xcc8833, layer: 'Hardware',
+    pos: [11, 16, 1], size: 0.65, shape: 'octa',
+    desc: 'Persistent data in the cloud. Object stores, managed databases, CDNs. Always available, billed by the byte.',
+    example: 'S3, GCS, Azure Blob, CloudFront, persistent volumes'
+  },
+];
+
+// ── Connections ────────────────────────────────────────────────────────
+const connections = [
+  // Human → Agent
+  { from: 'user', to: 'agent' },
+  { from: 'user', to: 'orchestrator' },
+
+  // Orchestrator ↔ Agents
+  { from: 'orchestrator', to: 'agent' },
+  { from: 'orchestrator', to: 'other_agents' },
+
+  // Agent internals
+  { from: 'agent', to: 'model' },
+  { from: 'agent', to: 'other_agents' },
+
+  // Knowledge ↔ Agent
+  { from: 'skill', to: 'agent' },
+  { from: 'claude_md', to: 'agent' },
+  { from: 'memory', to: 'agent' },
+  { from: 'plans', to: 'agent' },
+
+  // Agent → Execution
+  { from: 'agent', to: 'context' },
+  { from: 'agent', to: 'tool' },
+  { from: 'hooks', to: 'tool' },
+
+  // Tool → Protocol
+  { from: 'tool', to: 'mcp' },
+
+  // MCP branches
+  { from: 'mcp', to: 'resources' },
+  { from: 'mcp', to: 'prompts' },
+
+  // Security
+  { from: 'hooks', to: 'trust_boundary' },
+  { from: 'trust_boundary', to: 'tool' },
+  { from: 'trust_boundary', to: 'mcp' },
+  { from: 'sandboxing', to: 'tool' },
+  { from: 'auth_perms', to: 'agent' },
+  { from: 'auth_perms', to: 'tool' },
+  { from: 'prompt_injection', to: 'agent' },
+  { from: 'prompt_injection', to: 'trust_boundary' },
+  { from: 'cloud_iam', to: 'auth_perms' },
+  { from: 'cloud_iam', to: 'api' },
+  { from: 'k8s', to: 'sandboxing' },
+  { from: 'k8s', to: 'system' },
+  { from: 'compliance', to: 'auth_perms' },
+  { from: 'compliance', to: 'trust_boundary' },
+
+  // Threats → Defenses & Targets
+  { from: 'adversarial_input', to: 'prompt_injection' },
+  { from: 'adversarial_input', to: 'trust_boundary' },
+  { from: 'exfiltration', to: 'auth_perms' },
+  { from: 'exfiltration', to: 'api' },
+  { from: 'privilege_escalation', to: 'sandboxing' },
+  { from: 'privilege_escalation', to: 'cloud_iam' },
+  { from: 'supply_chain', to: 'mcp' },
+  { from: 'supply_chain', to: 'web' },
+  { from: 'ddos', to: 'api' },
+  { from: 'ddos', to: 'cloud_compute' },
+  { from: 'compliance', to: 'exfiltration' },
+
+  // MCP → World
+  { from: 'mcp', to: 'api' },
+  { from: 'mcp', to: 'system' },
+  { from: 'mcp', to: 'web' },
+
+  // World → Hardware
+  { from: 'system', to: 'cpu' },
+  { from: 'system', to: 'local_hw' },
+  { from: 'api', to: 'cloud_compute' },
+  { from: 'model', to: 'gpu' },
+  { from: 'cloud_compute', to: 'gpu' },
+  { from: 'local_hw', to: 'cpu' },
+  { from: 'local_hw', to: 'gpu' },
+  { from: 'cloud_compute', to: 'storage' },
+  { from: 'local_hw', to: 'storage' },
+  { from: 'k8s', to: 'cloud_compute' },
+  { from: 'unified_mem', to: 'cpu' },
+  { from: 'unified_mem', to: 'gpu' },
+  { from: 'unified_mem', to: 'local_hw' },
+  { from: 'quantum', to: 'cloud_compute' },
+  { from: 'github', to: 'cloud_compute' },
+  { from: 'github', to: 'api' },
+  { from: 'tool', to: 'github' },
+
+  // Application ↔ World
+  { from: 'voice_ai', to: 'api' },
+  { from: 'reconstruction_3d', to: 'api' },
+  { from: 'code_gen', to: 'system' },
+  { from: 'pipeline', to: 'system' },
+
+  // Application ↔ Agent/Execution
+  { from: 'tool', to: 'pipeline' },
+  { from: 'tool', to: 'code_gen' },
+  { from: 'agent', to: 'voice_ai' },
+  { from: 'mcp', to: 'event_bus' },
+
+  // Application internal
+  { from: 'pipeline', to: 'state_machine' },
+  { from: 'event_bus', to: 'state_machine' },
+  { from: 'ecs', to: 'event_bus' },
+  { from: 'reconstruction_3d', to: 'pipeline' },
+  { from: 'shader', to: 'ecs' },
+  { from: 'code_gen', to: 'pipeline' },
+
+  // Application ↔ Infrastructure
+  { from: 'voice_ai', to: 'realtime' },
+  { from: 'state_machine', to: 'database' },
+  { from: 'event_bus', to: 'realtime' },
+  { from: 'reconstruction_3d', to: 'serverless' },
+  { from: 'shader', to: 'gpu' },
+
+  // Infrastructure ↔ World
+  { from: 'api', to: 'serverless' },
+  { from: 'api', to: 'edge' },
+  { from: 'api', to: 'database' },
+  { from: 'web', to: 'cdn' },
+  { from: 'web', to: 'edge' },
+
+  // Infrastructure internal
+  { from: 'serverless', to: 'edge' },
+  { from: 'edge', to: 'cdn' },
+  { from: 'serverless', to: 'database' },
+  { from: 'realtime', to: 'database' },
+  { from: 'auth_infra', to: 'database' },
+  { from: 'auth_infra', to: 'serverless' },
+
+  // Infrastructure ↔ Hardware
+  { from: 'serverless', to: 'cloud_compute' },
+  { from: 'database', to: 'storage' },
+  { from: 'cdn', to: 'storage' },
+  { from: 'edge', to: 'cloud_compute' },
+
+  // Infrastructure ↔ Security
+  { from: 'auth_infra', to: 'auth_perms' },
+  { from: 'database', to: 'cloud_iam' },
+
+  // Infrastructure ↔ Protocol
+  { from: 'mcp', to: 'realtime' },
+  { from: 'mcp', to: 'database' },
+];
+
+// ── Build 3D ───────────────────────────────────────────────────────────
+const nodeGroup = new THREE.Group();
+const meshMap = {};      // id → mesh (for raycasting)
+const groupMap = {};     // id → group (for position animation)
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function createGeometry(shape, size) {
+  switch (shape) {
+    case 'ico': return new THREE.IcosahedronGeometry(size, 1);
+    case 'octa': return new THREE.OctahedronGeometry(size, 0);
+    case 'dodeca': return new THREE.DodecahedronGeometry(size, 0);
+    case 'box': return new THREE.BoxGeometry(size * 1.4, size * 1.4, size * 1.4);
+    case 'sphere': return new THREE.SphereGeometry(size, 16, 16);
+    case 'ring': return new THREE.TorusGeometry(size * 1.2, size * 0.25, 12, 32);
+    default: return new THREE.IcosahedronGeometry(size, 1);
+  }
+}
+
+nodes.forEach(n => {
+  // Each node gets its own group — everything moves together
+  const group = new THREE.Group();
+  group.position.set(...n.pos);
+  group.frustumCulled = false;
+
+  const geo = createGeometry(n.shape, n.size);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: n.color,
+    emissive: n.color,
+    emissiveIntensity: 0.15,
+    metalness: 0.3,
+    roughness: 0.4,
+    transparent: true,
+    opacity: 0.85,
+    depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.userData = n;
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 1;
+  group.add(mesh);
+  // For ring shapes, add invisible sphere hitbox for easier raycasting
+  if (n.shape === 'ring') {
+    const hitGeo = new THREE.SphereGeometry(n.size * 2.5, 8, 8);
+    const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+    const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+    hitMesh.userData = n;
+    hitMesh.frustumCulled = false;
+    group.add(hitMesh);
+    meshMap[n.id] = hitMesh;
+  } else {
+    meshMap[n.id] = mesh;
+  }
+  groupMap[n.id] = group;
+
+  // Wireframe overlay
+  const wireMat = new THREE.MeshBasicMaterial({
+    color: n.color, wireframe: true, transparent: true, opacity: 0.15,
+    depthWrite: false,
+  });
+  const wire = new THREE.Mesh(geo.clone(), wireMat);
+  wire.scale.setScalar(1.15);
+  wire.frustumCulled = false;
+  wire.renderOrder = 0;
+  group.add(wire);
+
+  // Glow
+  const spriteMat = new THREE.SpriteMaterial({
+    map: createGlowTexture(n.color),
+    transparent: true, opacity: 0.25, depthWrite: false,
+  });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.setScalar(n.size * 4.5);
+  sprite.frustumCulled = false;
+  sprite.renderOrder = 2;
+  group.add(sprite);
+
+  // Label — offset above the node within the group
+  const labelSprite = createLabel(n.label, n.color);
+  labelSprite.position.set(0, n.size + 0.7, 0);
+  labelSprite.scale.set(3.5, 0.9, 1);
+  labelSprite.frustumCulled = false;
+  labelSprite.renderOrder = 3;
+  group.add(labelSprite);
+
+  nodeGroup.add(group);
+});
+
+scene.add(nodeGroup);
+
+// ── Build connections ──────────────────────────────────────────────────
+const connectionGroup = new THREE.Group();
+
+connections.forEach(c => {
+  const fromGroup = groupMap[c.from];
+  const toGroup = groupMap[c.to];
+  if (!fromGroup || !toGroup) return;
+
+  const from = fromGroup.position.clone();
+  const to = toGroup.position.clone();
+
+  // Curved path
+  const mid = from.clone().lerp(to, 0.5);
+  const offset = new THREE.Vector3(
+    (Math.random() - 0.5) * 1.5,
+    0,
+    (Math.random() - 0.5) * 1.5 + 1.5
+  );
+  mid.add(offset);
+
+  const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
+  const curvePoints = curve.getPoints(30);
+
+  // Line
+  const lineGeo = new THREE.BufferGeometry().setFromPoints(curvePoints);
+  const lineMat = new THREE.LineBasicMaterial({
+    color: 0x3355aa, transparent: true, opacity: 0.2,
+    depthWrite: false,
+  });
+  const line = new THREE.Line(lineGeo, lineMat);
+  line.frustumCulled = false;
+  connectionGroup.add(line);
+
+  // Bouncing particles — request (blue) and response (orange)
+  const dotGeo = new THREE.SphereGeometry(0.06, 6, 6);
+
+  const dot1 = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0x88aaff }));
+  dot1.userData = { curve, t: Math.random(), speed: 0.003 + Math.random() * 0.002, direction: 1 };
+  dot1.frustumCulled = false;
+  connectionGroup.add(dot1);
+
+  const dot2 = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffaa66 }));
+  dot2.userData = { curve, t: Math.random(), speed: 0.0025 + Math.random() * 0.002, direction: -1 };
+  dot2.frustumCulled = false;
+  connectionGroup.add(dot2);
+});
+
+scene.add(connectionGroup);
+
+// ── Context Window boundary — wraps around the agent ───────────────────
+// Outer ring
+const ctxRingGeo = new THREE.TorusGeometry(6, 0.04, 12, 64);
+const ctxRingMat = new THREE.MeshBasicMaterial({
+  color: 0xffdd44, transparent: true, opacity: 0.18,
+  depthWrite: false,
+});
+const ctxRing = new THREE.Mesh(ctxRingGeo, ctxRingMat);
+ctxRing.position.set(0, 10, 0);
+ctxRing.rotation.x = Math.PI / 2;
+scene.add(ctxRing);
+
+// Second ring tilted for sphere-like feel
+const ctxRing2 = new THREE.Mesh(ctxRingGeo.clone(), ctxRingMat.clone());
+ctxRing2.position.set(0, 10, 0);
+ctxRing2.rotation.x = Math.PI / 3;
+ctxRing2.rotation.z = Math.PI / 4;
+scene.add(ctxRing2);
+
+// Third ring
+const ctxRing3 = new THREE.Mesh(ctxRingGeo.clone(), ctxRingMat.clone());
+ctxRing3.position.set(0, 10, 0);
+ctxRing3.rotation.x = Math.PI / 2.5;
+ctxRing3.rotation.y = Math.PI / 3;
+scene.add(ctxRing3);
+
+// Translucent sphere shell — wireframe to avoid z-fighting with nodes inside
+const ctxSphereGeo = new THREE.SphereGeometry(5.5, 16, 16);
+const ctxSphereMat = new THREE.MeshBasicMaterial({
+  color: 0xffdd44, transparent: true, opacity: 0.03,
+  wireframe: true, depthWrite: false,
+});
+const ctxSphere = new THREE.Mesh(ctxSphereGeo, ctxSphereMat);
+ctxSphere.position.set(0, 10, 0);
+ctxSphere.frustumCulled = false;
+scene.add(ctxSphere);
+
+// ── Layer separator lines (rings instead of planes to avoid z-fighting) ──
+[12, 8, 4.5, 0.5, -2.5, -4, -6.5, -7.5, -9, -11, -10].forEach(y => {
+  const ringGeo = new THREE.RingGeometry(14, 14.05, 64);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0x334466, transparent: true, opacity: 0.08,
+    side: THREE.DoubleSide, depthWrite: false,
+  });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.position.y = y;
+  ring.rotation.x = Math.PI / 2;
+  ring.frustumCulled = false;
+  scene.add(ring);
+});
+
+// ── Fireflies ─────────────────────────────────────────────────────────
+const fireflyCount = 150;
+const fireflyGeo = new THREE.BufferGeometry();
+const ffPositions = new Float32Array(fireflyCount * 3);
+const ffSeeds = new Float32Array(fireflyCount); // per-particle phase offset
+for (let i = 0; i < fireflyCount; i++) {
+  ffPositions[i * 3] = (Math.random() - 0.5) * 50;
+  ffPositions[i * 3 + 1] = (Math.random() - 0.5) * 40;
+  ffPositions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+  ffSeeds[i] = Math.random() * Math.PI * 2;
+}
+fireflyGeo.setAttribute('position', new THREE.BufferAttribute(ffPositions, 3));
+fireflyGeo.setAttribute('seed', new THREE.BufferAttribute(ffSeeds, 1));
+
+const fireflyMat = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  uniforms: {
+    uTime: { value: 0 },
+    uColor1: { value: new THREE.Color(0xffaa33) },  // warm orange
+    uColor2: { value: new THREE.Color(0xffdd66) },  // soft yellow
+  },
+  vertexShader: `
+    attribute float seed;
+    varying float vBrightness;
+    varying float vColorMix;
+    uniform float uTime;
+    void main() {
+      vec3 pos = position;
+      // Gentle drift
+      pos.x += sin(uTime * 0.15 + seed * 6.28) * 0.8;
+      pos.y += cos(uTime * 0.1 + seed * 4.0) * 0.5;
+      pos.z += sin(uTime * 0.12 + seed * 5.0) * 0.6;
+      // Pulsing brightness per firefly
+      vBrightness = 0.3 + 0.7 * pow(sin(uTime * (0.8 + seed * 0.5) + seed * 6.28) * 0.5 + 0.5, 3.0);
+      vColorMix = sin(seed * 3.14) * 0.5 + 0.5;
+      vec4 mvPos = modelViewMatrix * vec4(pos, 1.0);
+      gl_PointSize = (3.0 + vBrightness * 4.0) * (200.0 / -mvPos.z);
+      gl_Position = projectionMatrix * mvPos;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uColor1;
+    uniform vec3 uColor2;
+    varying float vBrightness;
+    varying float vColorMix;
+    void main() {
+      float d = length(gl_PointCoord - 0.5) * 2.0;
+      if (d > 1.0) discard;
+      float glow = exp(-d * d * 3.0);
+      vec3 col = mix(uColor1, uColor2, vColorMix);
+      gl_FragColor = vec4(col, glow * vBrightness * 0.3);
+    }
+  `,
+});
+const fireflies = new THREE.Points(fireflyGeo, fireflyMat);
+fireflies.frustumCulled = false;
+scene.add(fireflies);
+
+// ── Aurora background ─────────────────────────────────────────────────
+const auroraMat = new THREE.ShaderMaterial({
+  transparent: true,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  uniforms: { uTime: { value: 0 } },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform float uTime;
+    varying vec2 vUv;
+    void main() {
+      float y = vUv.y;
+      // Flowing wave bands
+      float wave1 = sin(vUv.x * 3.0 + uTime * 0.2 + y * 2.0) * 0.5 + 0.5;
+      float wave2 = sin(vUv.x * 5.0 - uTime * 0.15 + y * 3.0) * 0.5 + 0.5;
+      float wave3 = sin(vUv.x * 2.0 + uTime * 0.1 + y * 4.0) * 0.5 + 0.5;
+      // Color channels — green/teal/purple aurora
+      vec3 col = vec3(0.0);
+      col += vec3(0.1, 0.8, 0.4) * wave1 * 0.4;
+      col += vec3(0.2, 0.4, 0.9) * wave2 * 0.3;
+      col += vec3(0.6, 0.2, 0.8) * wave3 * 0.2;
+      // Fade at edges
+      float fade = smoothstep(0.0, 0.3, y) * smoothstep(1.0, 0.6, y);
+      fade *= smoothstep(0.0, 0.2, vUv.x) * smoothstep(1.0, 0.8, vUv.x);
+      gl_FragColor = vec4(col, fade * 0.08);
+    }
+  `,
+});
+const auroraGeo = new THREE.PlaneGeometry(80, 40);
+const aurora = new THREE.Mesh(auroraGeo, auroraMat);
+aurora.position.set(0, 10, -30);
+aurora.frustumCulled = false;
+aurora.renderOrder = -1;
+scene.add(aurora);
+
+// ── Grid floor ─────────────────────────────────────────────────────────
+const grid = new THREE.GridHelper(50, 50, 0x1a1a2e, 0x111122);
+grid.position.y = -16;
+scene.add(grid);
+
+// Wall grids — back wall and left wall
+const wallGridBack = new THREE.GridHelper(50, 50, 0x1a1a2e, 0x111122);
+wallGridBack.rotation.x = Math.PI / 2;
+wallGridBack.position.set(0, 9, -25);
+scene.add(wallGridBack);
+
+const wallGridLeft = new THREE.GridHelper(50, 50, 0x1a1a2e, 0x111122);
+wallGridLeft.rotation.z = Math.PI / 2;
+wallGridLeft.position.set(-25, 9, 0);
+scene.add(wallGridLeft);
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function createGlowTexture(color) {
+  const s = 128, canvas = document.createElement('canvas');
+  canvas.width = canvas.height = s;
+  const ctx = canvas.getContext('2d');
+  const c = new THREE.Color(color);
+  const g = ctx.createRadialGradient(s/2, s/2, 0, s/2, s/2, s/2);
+  g.addColorStop(0, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0.5)`);
+  g.addColorStop(0.4, `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0.1)`);
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, s, s);
+  return new THREE.CanvasTexture(canvas);
+}
+
+function createLabel(text, color) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  const c = new THREE.Color(color);
+  ctx.font = 'bold 48px "Segoe UI", system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = `rgba(${c.r*255|0},${c.g*255|0},${c.b*255|0},0.9)`;
+  ctx.fillText(text, 256, 48);
+  const tex = new THREE.CanvasTexture(canvas);
+  const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false });
+  return new THREE.Sprite(mat);
+}
+
+// ── Tooltip ────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+const tooltipTitle = tooltip.querySelector('h3');
+const tooltipLayer = tooltip.querySelector('.layer');
+const tooltipBody = tooltip.querySelector('p');
+let hoveredNodes = [];
+
+function onMouseMove(e) {
+  mouse.x = (e.clientX / innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+  const meshes = nodes.map(n => meshMap[n.id]);
+  const hits = raycaster.intersectObjects(meshes, false);
+
+  // Collect all unique hits (deduplicate by node id)
+  const seen = new Set();
+  const hitNodes = [];
+  for (const hit of hits) {
+    const data = hit.object.userData;
+    if (data.label && !seen.has(data.id)) {
+      seen.add(data.id);
+      hitNodes.push({ data, obj: hit.object });
+    }
+  }
+
+  if (hitNodes.length > 0) {
+    hoveredNodes = hitNodes.map(h => h.obj);
+    if (hitNodes.length === 1) {
+      const d = hitNodes[0].data;
+      tooltipTitle.textContent = d.label;
+      tooltipLayer.textContent = `${d.layer} Layer`;
+      tooltipBody.innerHTML = `${d.desc}<br><br><em style="color:#777">e.g. ${d.example}</em>`;
+    } else {
+      tooltipTitle.textContent = hitNodes.map(h => h.data.label).join(' + ');
+      tooltipLayer.textContent = hitNodes.map(h => `${h.data.layer} Layer`).join(' · ');
+      tooltipBody.innerHTML = hitNodes.map(h =>
+        `<strong style="color:#${h.data.color.toString(16).padStart(6,'0')}">${h.data.label}</strong><br>${h.data.desc}<br><em style="color:#777">e.g. ${h.data.example}</em>`
+      ).join('<br><br>');
+    }
+    tooltip.style.display = 'block';
+    document.body.style.cursor = 'pointer';
+    return;
+  }
+  hoveredNodes = [];
+  tooltip.style.display = 'none';
+  document.body.style.cursor = 'default';
+}
+window.addEventListener('mousemove', onMouseMove);
+
+// ── Animate ────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Node animation — move the group, rotate the mesh
+  nodes.forEach(n => {
+    const group = groupMap[n.id];
+    const mesh = meshMap[n.id];
+    const baseY = n.pos[1];
+    group.position.y = baseY + Math.sin(t * 0.4 + n.pos[0] * 0.5 + n.pos[2] * 0.3) * 0.25;
+    mesh.rotation.y = t * 0.12 + n.pos[0];
+    mesh.rotation.x = Math.sin(t * 0.25 + n.pos[2]) * 0.08;
+
+    if (hoveredNodes.includes(mesh)) {
+      mesh.material.emissiveIntensity = 0.5 + Math.sin(t * 5) * 0.15;
+      mesh.scale.setScalar(1.15);
+    } else {
+      mesh.material.emissiveIntensity = 0.15;
+      mesh.scale.setScalar(1.0);
+    }
+  });
+
+  // Connection particles bounce
+  connectionGroup.children.forEach(child => {
+    if (child.userData.curve) {
+      child.userData.t += child.userData.speed * child.userData.direction;
+      if (child.userData.t >= 1) { child.userData.t = 1; child.userData.direction = -1; }
+      else if (child.userData.t <= 0) { child.userData.t = 0; child.userData.direction = 1; }
+      child.position.copy(child.userData.curve.getPointAt(child.userData.t));
+    }
+  });
+
+  // Context rings orbit around agent
+  ctxRing.rotation.z = t * 0.08;
+  ctxRing.material.opacity = 0.1 + Math.sin(t * 0.6) * 0.06;
+  ctxRing2.rotation.z = t * 0.06 + 1;
+  ctxRing2.rotation.x = Math.PI / 3 + Math.sin(t * 0.15) * 0.2;
+  ctxRing2.material.opacity = 0.1 + Math.sin(t * 0.8 + 1) * 0.06;
+  ctxRing3.rotation.y = Math.PI / 3 + t * 0.04;
+  ctxRing3.rotation.x = Math.PI / 2.5 + Math.sin(t * 0.2) * 0.15;
+  ctxRing3.material.opacity = 0.1 + Math.sin(t * 0.7 + 2) * 0.06;
+  ctxSphere.material.opacity = 0.025 + Math.sin(t * 0.4) * 0.015;
+
+  // Fireflies + aurora
+  fireflyMat.uniforms.uTime.value = t;
+  auroraMat.uniforms.uTime.value = t;
+
+  // Lights
+  rimLight.intensity = 0.5 + Math.sin(t * 0.7) * 0.2;
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+
+// ── Resize ─────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
