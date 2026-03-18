@@ -66,7 +66,7 @@ const scene = new THREE.Scene();
 scene.fog = new THREE.FogExp2(0x0a0a0f, 0.005);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 500);
-camera.position.set(5, 12, 28);
+camera.position.set(5, 0, 40);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
@@ -130,7 +130,7 @@ const nodes = [
   },
   {
     id: 'model', label: 'MODEL / LLM', color: 0x88ccff, layer: 'Agent',
-    pos: [0, 10, -3], size: 0.75, shape: 'sphere',
+    pos: [0, 12, -3], size: 0.75, shape: 'sphere',
     desc: 'The actual neural network powering the agent. Different models for different jobs.',
     example: 'Opus (complex), Sonnet (code), Haiku (fast lookups)'
   },
@@ -248,50 +248,50 @@ const nodes = [
   // ── Threat Layer ──
   {
     id: 'adversarial_input', label: 'ADVERSARIAL INPUT', color: 0xff2244, layer: 'Threat',
-    pos: [-6, -5, 2], size: 0.7, shape: 'dodeca',
+    pos: [-6, -6, 2], size: 0.7, shape: 'dodeca',
     desc: 'Malicious data designed to fool models. Jailbreaks, prompt injections, data poisoning.',
     example: 'Ignore previous instructions, hidden Unicode, steganographic payloads'
   },
   {
     id: 'exfiltration', label: 'EXFILTRATION', color: 0xdd1133, layer: 'Threat',
-    pos: [-2, -5, -2], size: 0.65, shape: 'octa',
+    pos: [-2, -6, -2], size: 0.65, shape: 'octa',
     desc: 'Unauthorized data leakage. Agent tricked into sending secrets to external endpoints.',
     example: 'Credential leak via tool calls, PII in API requests, memory exfil'
   },
   {
     id: 'privilege_escalation', label: 'PRIV ESCALATION', color: 0xff3355, layer: 'Threat',
-    pos: [2, -5, -2], size: 0.7, shape: 'ico',
+    pos: [2, -6, -2], size: 0.7, shape: 'ico',
     desc: 'Gaining more access than authorized. Breaking out of sandbox, escalating permissions.',
     example: 'Container escape, sudo exploit, token theft, role assumption'
   },
   {
     id: 'supply_chain', label: 'SUPPLY CHAIN', color: 0xcc0022, layer: 'Threat',
-    pos: [6, -5, 2], size: 0.65, shape: 'box',
+    pos: [6, -6, 2], size: 0.65, shape: 'box',
     desc: 'Compromise through dependencies. Poisoned packages, malicious MCP servers, backdoored models.',
     example: 'npm typosquatting, compromised pip packages, trojan plugins'
   },
   {
     id: 'ddos', label: 'DoS / ABUSE', color: 0xee2255, layer: 'Threat',
-    pos: [0, -5.5, 3], size: 0.6, shape: 'octa',
+    pos: [0, -6.5, 3], size: 0.6, shape: 'octa',
     desc: 'Resource exhaustion and misuse. Flooding APIs, burning tokens, infinite loops.',
     example: 'API rate limit abuse, token burn attacks, recursive agent loops'
   },
 
   {
     id: 'unified_mem', label: 'UNIFIED MEMORY', color: 0xffcc44, layer: 'Hardware',
-    pos: [-4, -13, 2], size: 0.65, shape: 'sphere',
+    pos: [-4, -24, 2], size: 0.65, shape: 'sphere',
     desc: 'Shared memory pool for CPU and GPU. No copying between them — both read the same bytes. Faster, simpler, power-efficient.',
     example: 'Apple M1–M4 Ultra, AMD APUs with shared HBM'
   },
   {
     id: 'quantum', label: 'QUANTUM', color: 0xbb44ff, layer: 'Hardware',
-    pos: [5, 18, 1], size: 0.6, shape: 'dodeca',
+    pos: [5, -24, 1], size: 0.6, shape: 'dodeca',
     desc: 'Early-stage computing paradigm using qubits instead of bits. Promising for cryptography, molecular simulation, and optimization. Current hardware is nascent — useful for research, not yet for production AI workloads.',
     example: 'IBM Quantum (free, noisy), Amazon Braket (pay-per-shot), Google Willow (research only)'
   },
   {
     id: 'github', label: 'GITHUB', color: 0xffffff, layer: 'Hardware',
-    pos: [0, 17, 3], size: 0.7, shape: 'ico',
+    pos: [0, -24, 3], size: 0.7, shape: 'ico',
     desc: 'Git hosting, CI/CD, issue tracking, code review. Where code lives and changes flow through.',
     example: 'Repos, Actions workflows, gh CLI, webhooks'
   },
@@ -299,68 +299,68 @@ const nodes = [
   // ── World Layer (bottom) ──
   {
     id: 'api', label: 'API', color: 0xff5555, layer: 'World',
-    pos: [-5, -8, 0], size: 0.85, shape: 'ico',
+    pos: [-5, -10, 0], size: 0.85, shape: 'ico',
     desc: 'Remote services that accept requests and return data. The menu of what you can ask for.',
     example: 'Figma API, Slack API, GitHub API, OpenAI API'
   },
   {
     id: 'system', label: 'SYSTEM', color: 0xff8844, layer: 'World',
-    pos: [0, -8, -2], size: 0.85, shape: 'ico',
+    pos: [0, -10, -2], size: 0.85, shape: 'ico',
     desc: 'Local OS capabilities. File system, clipboard, processes — the real world.',
     example: 'Windows clipboard, file system, PowerShell, git'
   },
   {
     id: 'web', label: 'WEB', color: 0xff6655, layer: 'World',
-    pos: [5, -8, 0], size: 0.75, shape: 'sphere',
+    pos: [5, -10, 0], size: 0.75, shape: 'sphere',
     desc: 'The internet. Search, fetch, scrape. Information at large.',
     example: 'WebSearch, WebFetch, npm registry'
   },
   // ── Application Layer ──
   {
     id: 'voice_ai', label: 'VOICE AI', color: 0xff66aa, layer: 'Application',
-    pos: [-9, -7, 0], size: 0.75, shape: 'ico',
+    pos: [-9, -14, 0], size: 0.75, shape: 'ico',
     desc: 'Speech recognition and synthesis. Turns voice into text and text into speech. Enables conversational AI interfaces.',
     example: 'Whisper (STT), ElevenLabs (TTS), Groq Whisper, WebRTC audio'
   },
   {
     id: 'pipeline', label: 'PIPELINE', color: 0xee5599, layer: 'Application',
-    pos: [-5, -7, -2], size: 0.8, shape: 'octa',
+    pos: [-5, -14, -2], size: 0.8, shape: 'octa',
     desc: 'Sequential processing chains. Data flows through ordered stages — each transforms, filters, or enriches. The assembly line of software.',
     example: 'DTR reconstruction pipeline, CI/CD, ETL, video-to-3D'
   },
   {
     id: 'state_machine', label: 'STATE MACHINE', color: 0xff77bb, layer: 'Application',
-    pos: [-1, -7, 1], size: 0.7, shape: 'dodeca',
+    pos: [-1, -14, 1], size: 0.7, shape: 'dodeca',
     desc: 'Finite set of states with defined transitions. Only one state active at a time. Prevents impossible combinations.',
     example: 'Game states (lobby→play→results), voice (idle→listening→speaking), job lifecycle'
   },
   {
     id: 'event_bus', label: 'EVENT BUS', color: 0xdd4488, layer: 'Application',
-    pos: [3, -7, -2], size: 0.7, shape: 'ico',
+    pos: [3, -14, -2], size: 0.7, shape: 'ico',
     desc: 'Decoupled pub/sub messaging. Components broadcast events without knowing who listens. The nervous system of modular apps.',
     example: 'Godot signals, Node EventEmitter, WebSocket channels, DOM events'
   },
   {
     id: 'ecs', label: 'ECS', color: 0xcc3377, layer: 'Application',
-    pos: [7, -7, 0], size: 0.75, shape: 'box',
+    pos: [7, -14, 0], size: 0.75, shape: 'box',
     desc: 'Entity-Component-System. Entities are IDs, components are data bags, systems are logic. Composition over inheritance. The architecture of games and simulations.',
     example: 'Glacial game systems, Unity DOTS, Bevy ECS, Open Sause LARP engine'
   },
   {
     id: 'code_gen', label: 'CODE GEN', color: 0xff88cc, layer: 'Application',
-    pos: [-5, -7, 3], size: 0.65, shape: 'sphere',
+    pos: [-5, -14, 3], size: 0.65, shape: 'sphere',
     desc: 'Programmatic creation of source code. Templates, ASTs, or AI generate code for specific frameworks and targets.',
     example: 'Spline MCP (React/Next.js/Vanilla), scaffolding tools, copilot suggestions'
   },
   {
     id: 'reconstruction_3d', label: '3D RECONSTRUCTION', color: 0xee6699, layer: 'Application',
-    pos: [5, -7, 3], size: 0.8, shape: 'ico',
+    pos: [5, -14, 3], size: 0.8, shape: 'ico',
     desc: 'Turning 2D images or video into 3D geometry. Photogrammetry uses many photos; AI hallucinates from few. Fusion combines both.',
     example: 'COLMAP, Trellis, Hunyuan3D, Gaussian Splatting, NeRF'
   },
   {
     id: 'shader', label: 'SHADER', color: 0xdd5588, layer: 'Application',
-    pos: [9, -7, -1], size: 0.7, shape: 'dodeca',
+    pos: [9, -14, -1], size: 0.7, shape: 'dodeca',
     desc: 'Programs that run on the GPU per-pixel or per-vertex. Control how things look — color, lighting, distortion, effects. The paint of 3D.',
     example: 'GLSL, WGSL, TSL (Three.js Shading Language), vertex/fragment shaders'
   },
@@ -368,37 +368,37 @@ const nodes = [
   // ── Infrastructure Layer ──
   {
     id: 'serverless', label: 'SERVERLESS', color: 0x22ccdd, layer: 'Infrastructure',
-    pos: [-8, -10, 2], size: 0.8, shape: 'ico',
+    pos: [-8, -19, 2], size: 0.8, shape: 'ico',
     desc: 'Functions that run on-demand. No server management, pay per execution. The servers exist — you just don\'t think about them.',
     example: 'Vercel Functions, AWS Lambda, Supabase Edge Functions, Cloud Run'
   },
   {
     id: 'edge', label: 'EDGE', color: 0x33ddee, layer: 'Infrastructure',
-    pos: [-4, -10, -1], size: 0.75, shape: 'dodeca',
+    pos: [-4, -19, -1], size: 0.75, shape: 'dodeca',
     desc: 'Compute distributed globally, close to users. Your code runs in the nearest data center — London, Tokyo, Sao Paulo.',
     example: 'Cloudflare Workers, Vercel Edge, Deno Deploy, Supabase Edge Functions'
   },
   {
     id: 'database', label: 'DATABASE', color: 0x11bbcc, layer: 'Infrastructure',
-    pos: [0, -10, 2], size: 0.9, shape: 'box',
+    pos: [0, -19, 2], size: 0.9, shape: 'box',
     desc: 'Persistent structured data. SQL, NoSQL, vector — where state lives. The code gets cloned everywhere, but data usually lives in one region.',
     example: 'Supabase (Postgres), Firebase, PlanetScale, MongoDB Atlas, pgvector'
   },
   {
     id: 'cdn', label: 'CDN', color: 0x44eeff, layer: 'Infrastructure',
-    pos: [4, -10, -1], size: 0.65, shape: 'sphere',
+    pos: [4, -19, -1], size: 0.65, shape: 'sphere',
     desc: 'Cached static content at the edge. Images, JS, HTML served from the nearest node. Fast because it\'s pre-copied, not computed.',
     example: 'Cloudflare, Vercel Edge Network, CloudFront, Fastly'
   },
   {
     id: 'realtime', label: 'REALTIME', color: 0x00aabb, layer: 'Infrastructure',
-    pos: [8, -10, 2], size: 0.75, shape: 'octa',
+    pos: [8, -19, 2], size: 0.75, shape: 'octa',
     desc: 'Persistent connections (WebSockets). Live updates, multiplayer state, presence. The server pushes to you instead of you polling it.',
     example: 'Supabase Realtime, Socket.io, Pusher, Ably, Firebase Realtime DB'
   },
   {
     id: 'auth_infra', label: 'AUTH', color: 0x22ddcc, layer: 'Infrastructure',
-    pos: [0, -10, -3], size: 0.7, shape: 'ico',
+    pos: [0, -19, -3], size: 0.7, shape: 'ico',
     desc: 'Identity and access at the infrastructure level. Who are you, and what can you touch? Handles login, sessions, tokens, OAuth.',
     example: 'Supabase Auth, Auth0, Clerk, NextAuth.js, Firebase Auth'
   },
@@ -406,31 +406,31 @@ const nodes = [
   // ── Hardware Layer (bottom) ──
   {
     id: 'cpu', label: 'CPU / RAM', color: 0xff8800, layer: 'Hardware',
-    pos: [-6, -12, 0], size: 0.8, shape: 'box',
+    pos: [-6, -24, 0], size: 0.8, shape: 'box',
     desc: 'Processing and system memory. CPU runs the logic, RAM holds the state. Context windows, model weights, processes — all live in RAM.',
     example: 'Intel i9 + 64GB DDR5, AMD Ryzen, Apple M-series unified memory'
   },
   {
     id: 'gpu', label: 'GPU / VRAM', color: 0xffaa22, layer: 'Hardware',
-    pos: [-2, -12, -1], size: 0.9, shape: 'ico',
+    pos: [-2, -24, -1], size: 0.9, shape: 'ico',
     desc: 'Parallel compute and memory. Where models actually run. VRAM = how big a model fits.',
     example: 'RTX 4090 (24GB), A100 (80GB), H100, Apple M-series unified'
   },
   {
     id: 'cloud_compute', label: 'CLOUD COMPUTE', color: 0xee7700, layer: 'Hardware',
-    pos: [8, 17, -2], size: 0.85, shape: 'ico',
+    pos: [8, -24, -2], size: 0.85, shape: 'ico',
     desc: 'Remote hardware you rent. Scales up, scales down, bills by the second.',
     example: 'GCP TPUs, AWS GPU instances, Azure VMs, Lambda, Cloud Run'
   },
   {
     id: 'local_hw', label: 'LOCAL MACHINE', color: 0xdd6600, layer: 'Hardware',
-    pos: [6, -12, 0], size: 0.75, shape: 'box',
+    pos: [6, -24, 0], size: 0.75, shape: 'box',
     desc: 'Your physical machine. RAM, disk, network. The thing under your desk or in your lap.',
     example: 'Dev laptop, workstation, Raspberry Pi, edge devices'
   },
   {
     id: 'storage', label: 'CLOUD STORAGE', color: 0xcc8833, layer: 'Hardware',
-    pos: [11, 16, 1], size: 0.65, shape: 'octa',
+    pos: [11, -24, 1], size: 0.65, shape: 'octa',
     desc: 'Persistent data in the cloud. Object stores, managed databases, CDNs. Always available, billed by the byte.',
     example: 'S3, GCS, Azure Blob, CloudFront, persistent volumes'
   },
@@ -755,7 +755,7 @@ ctxSphere.frustumCulled = false;
 scene.add(ctxSphere);
 
 // ── Layer separator lines (rings instead of planes to avoid z-fighting) ──
-[12, 8, 4.5, 0.5, -2.5, -4, -6.5, -7.5, -9, -11, -10].forEach(y => {
+[12, 8, 4.5, 0.5, -2.5, -4, -8, -12, -16.5, -21.5].forEach(y => {
   const ringGeo = new THREE.RingGeometry(14, 14.05, 64);
   const ringMat = new THREE.MeshBasicMaterial({
     color: 0x334466, transparent: true, opacity: 0.08,
@@ -870,7 +870,7 @@ scene.add(aurora);
 
 // ── Grid floor ─────────────────────────────────────────────────────────
 const grid = new THREE.GridHelper(50, 50, 0x1a1a2e, 0x111122);
-grid.position.y = -16;
+grid.position.y = -28;
 scene.add(grid);
 
 // Wall grids — back wall and left wall
