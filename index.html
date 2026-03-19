@@ -204,43 +204,43 @@ const nodes = [
   // ── Security Layer ──
   {
     id: 'trust_boundary', label: 'TRUST BOUNDARY', color: 0x00ffaa, layer: 'Security',
-    pos: [-5, -1, 1], size: 0.85, shape: 'octa',
+    pos: [-5, 16, 1], size: 0.85, shape: 'octa',
     desc: 'The line between trusted and untrusted. Data crossing this boundary gets scrutinized.',
     example: 'File content vs user instructions, external API responses'
   },
   {
     id: 'sandboxing', label: 'SANDBOXING', color: 0x00dd88, layer: 'Security',
-    pos: [-1.5, -1, -2], size: 0.75, shape: 'box',
+    pos: [-1.5, 16, -2], size: 0.75, shape: 'box',
     desc: 'Isolated execution environments. Tools run in cages so they can\'t break the house.',
     example: 'Bash sandbox, container isolation, permission boundaries'
   },
   {
     id: 'auth_perms', label: 'AUTH / PERMISSIONS', color: 0x33ffcc, layer: 'Security',
-    pos: [2, -1, -1], size: 0.8, shape: 'ico',
+    pos: [2, 16, -1], size: 0.8, shape: 'ico',
     desc: 'Access control. Who can do what, and how much damage can they do?',
     example: 'API keys, OAuth scopes, tool allowlists, permission modes'
   },
   {
     id: 'prompt_injection', label: 'PROMPT INJECTION', color: 0x00cc77, layer: 'Security',
-    pos: [5.5, -1, 1], size: 0.7, shape: 'dodeca',
+    pos: [5.5, 16, 1], size: 0.7, shape: 'dodeca',
     desc: 'Defense against manipulation. Untrusted content trying to hijack the agent\'s behavior.',
     example: 'Injected instructions in files, web content, tool results'
   },
   {
     id: 'cloud_iam', label: 'CLOUD IAM', color: 0x22eebb, layer: 'Security',
-    pos: [-3, -1.5, -3], size: 0.7, shape: 'ico',
+    pos: [-3, 15.5, -3], size: 0.7, shape: 'ico',
     desc: 'Cloud identity and access management. Service accounts, roles, policies governing who talks to what.',
     example: 'GCP IAM, AWS IAM, Azure AD, service account keys'
   },
   {
     id: 'k8s', label: 'K8s / GKE', color: 0x00bb99, layer: 'Security',
-    pos: [4, -1.5, -3], size: 0.75, shape: 'box',
+    pos: [4, 15.5, -3], size: 0.75, shape: 'box',
     desc: 'Kubernetes clusters. Container orchestration with RBAC, network policies, pod security.',
     example: 'GKE clusters, EKS, AKS, pod security policies, namespaces'
   },
   {
     id: 'compliance', label: 'COMPLIANCE', color: 0x44ffdd, layer: 'Security',
-    pos: [0, -2, 3], size: 0.7, shape: 'dodeca',
+    pos: [0, 15, 3], size: 0.7, shape: 'dodeca',
     desc: 'Regulatory and policy compliance. The rules you must follow, audited and enforced.',
     example: 'GDPR, SOC 2, HIPAA, data residency, audit logs'
   },
@@ -248,31 +248,31 @@ const nodes = [
   // ── Threat Layer ──
   {
     id: 'adversarial_input', label: 'ADVERSARIAL INPUT', color: 0xff2244, layer: 'Threat',
-    pos: [-6, -6, 2], size: 0.7, shape: 'dodeca',
+    pos: [-6, 13, 2], size: 0.7, shape: 'dodeca',
     desc: 'Malicious data designed to fool models. Jailbreaks, prompt injections, data poisoning.',
     example: 'Ignore previous instructions, hidden Unicode, steganographic payloads'
   },
   {
     id: 'exfiltration', label: 'EXFILTRATION', color: 0xdd1133, layer: 'Threat',
-    pos: [-2, -6, -2], size: 0.65, shape: 'octa',
+    pos: [-2, 13, -2], size: 0.65, shape: 'octa',
     desc: 'Unauthorized data leakage. Agent tricked into sending secrets to external endpoints.',
     example: 'Credential leak via tool calls, PII in API requests, memory exfil'
   },
   {
     id: 'privilege_escalation', label: 'PRIV ESCALATION', color: 0xff3355, layer: 'Threat',
-    pos: [2, -6, -2], size: 0.7, shape: 'ico',
+    pos: [2, 13, -2], size: 0.7, shape: 'ico',
     desc: 'Gaining more access than authorized. Breaking out of sandbox, escalating permissions.',
     example: 'Container escape, sudo exploit, token theft, role assumption'
   },
   {
     id: 'supply_chain', label: 'SUPPLY CHAIN', color: 0xcc0022, layer: 'Threat',
-    pos: [6, -6, 2], size: 0.65, shape: 'box',
+    pos: [6, 13, 2], size: 0.65, shape: 'box',
     desc: 'Compromise through dependencies. Poisoned packages, malicious MCP servers, backdoored models.',
     example: 'npm typosquatting, compromised pip packages, trojan plugins'
   },
   {
     id: 'ddos', label: 'DoS / ABUSE', color: 0xee2255, layer: 'Threat',
-    pos: [0, -6.5, 3], size: 0.6, shape: 'octa',
+    pos: [0, 12.5, 3], size: 0.6, shape: 'octa',
     desc: 'Resource exhaustion and misuse. Flooding APIs, burning tokens, infinite loops.',
     example: 'API rate limit abuse, token burn attacks, recursive agent loops'
   },
@@ -417,8 +417,8 @@ const nodes = [
     example: 'RTX 4090 (24GB), A100 (80GB), H100, Apple M-series unified'
   },
   {
-    id: 'cloud_compute', label: 'CLOUD COMPUTE', color: 0xee7700, layer: 'Hardware',
-    pos: [8, -24, -2], size: 0.85, shape: 'ico',
+    id: 'cloud_compute', label: 'CLOUD COMPUTE', color: 0xee7700, layer: 'Infrastructure',
+    pos: [8, -19, -3], size: 0.85, shape: 'ico',
     desc: 'Remote hardware you rent. Scales up, scales down, bills by the second.',
     example: 'GCP TPUs, AWS GPU instances, Azure VMs, Lambda, Cloud Run'
   },
@@ -429,8 +429,8 @@ const nodes = [
     example: 'Dev laptop, workstation, Raspberry Pi, edge devices'
   },
   {
-    id: 'storage', label: 'CLOUD STORAGE', color: 0xcc8833, layer: 'Hardware',
-    pos: [11, -24, 1], size: 0.65, shape: 'octa',
+    id: 'storage', label: 'CLOUD STORAGE', color: 0xcc8833, layer: 'Infrastructure',
+    pos: [11, -19, 1], size: 0.65, shape: 'octa',
     desc: 'Persistent data in the cloud. Object stores, managed databases, CDNs. Always available, billed by the byte.',
     example: 'S3, GCS, Azure Blob, CloudFront, persistent volumes'
   },
